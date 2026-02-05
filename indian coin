@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Image Recognition</title>
+
+<!-- TensorFlow & Teachable Machine -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+<style>
+/* ===== THEME VARIABLES ===== */
+:root {
+    --bg-gradient: linear-gradient(135deg, #2ecc71, #0a1a3a);
+    --box-bg: #ffffff;
+    --text: #0a1a3a;
+    --button: #0a1a3a;
+}
+
+body.dark {
+    --bg-gradient: linear-gradient(135deg, #020617, #020617);
+    --box-bg: #0b122a;
+    --text: #e6ebff;
+    --button: #1e3a8a;
+}
+
+/* ===== GLOBAL ===== */
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg-gradient);
+    font-family: Arial, sans-serif;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    transition: background 0.4s;
+}
+
+/* ===== STAR BACKGROUND ===== */
+.background {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.star {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation:
+        drift linear infinite,
+        twinkle ease-in-out infinite;
+}
+
+@keyframes drift {
+    from { transform: translateX(-10vw); }
+    to   { transform: translateX(110vw); }
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+/* ===== MAIN BOX ===== */
+.box {
+    position: relative;
+    z-index: 1;
+    background: var(--box-bg);
+    padding: 20px;
+    width: 90%;
+    max-width: 360px;
+    border-radius: 14px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+    text-align: center;
+    transition: background 0.4s, color 0.4s;
+}
+
+h3 {
+    margin-top: 0;
+}
+
+/* ===== INPUTS ===== */
+input[type="file"] {
+    margin-top: 10px;
+    color: var(--text);
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: var(--button);
+    color: white;
+    font-size: 14px;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+img {
+    width: 100%;
+    margin-top: 12px;
+    border-radius: 8px;
+    display: none;
+}
+
+#result {
+    margin-top: 12px;
+    font-size: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Sparkling Stars Background -->
+<div class="background">
+    <!-- stars -->
+    <div class="star" style="top:10%; left:5%; animation-duration:40s, 3s;"></div>
+    <div class="star" style="top:20%; left:15%; animation-duration:45s, 4s;"></div>
+    <div class="star" style="top:35%; left:30%; animation-duration:50s, 2.5s;"></div>
+    <div class="star" style="top:50%; left:60%; animation-duration:42s, 3.5s;"></div>
+    <div class="star" style="top:65%; left:80%; animation-duration:55s, 4s;"></div>
+    <div class="star" style="top:75%; left:40%; animation-duration:48s, 3s;"></div>
+    <div class="star" style="top:85%; left:70%; animation-duration:60s, 5s;"></div>
+</div>
+
+<div class="box">
+    <h3>Image Recognition</h3>
+
+    <input id="fileInput" type="file" accept="image/*" onchange="predictImage(event)">
+
+    <div class="controls">
+        <button onclick="resetImage()">Reset</button>
+        <button onclick="toggleDark()">🌙 Dark Mode</button>
+    </div>
+
+    <img id="preview">
+    <div id="result"></div>
+</div>
+
+<script>
+const MODEL_URL = "https://teachablemachine.withgoogle.com/models/G1dTHS7Fg/";
+let model;
+
+/* ===== LOAD MODEL ===== */
+async function loadModel() {
+    model = await tmImage.load(
+        MODEL_URL + "model.json",
+        MODEL_URL + "metadata.json"
+    );
+}
+loadModel();
+
+/* ===== PREDICT ===== */
+async function predictImage(event) {
+    if (!model) return alert("Model belum siap");
+
+    const img = document.getElementById("preview");
+    img.src = URL.createObjectURL(event.target.files[0]);
+    img.style.display = "block";
+
+    img.onload = async () => {
+        const predictions = await model.predict(img);
+        const best = predictions.reduce((a, b) =>
+            a.probability > b.probability ? a : b
+        );
+
+        document.getElementById("result").innerHTML =
+            `<b>${best.className}</b><br>${(best.probability * 100).toFixed(2)}%`;
+    };
+}
+
+/* ===== RESET ===== */
+function resetImage() {
+    document.getElementById("fileInput").value = "";
+    document.getElementById("preview").style.display = "none";
+    document.getElementById("preview").src = "";
+    document.getElementById("result").innerHTML = "";
+}
+
+/* ===== DARK MODE ===== */
+function toggleDark() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+}
+
+if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark");
+}
+</script>
+
+</body>
+</html>
